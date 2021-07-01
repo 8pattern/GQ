@@ -1,7 +1,7 @@
 {
-  "name": "",
+  "name": "@8pattern/gq",
   "version": "0.0.1",
-  "description": "",
+  "description": "A GraphQL client for TypeScript",
   "scripts": {
     "dev": "rollup -c -w --environment NODE_ENV:development",
     "build": "rollup -c --environment NODE_ENV:production",
@@ -10,9 +10,11 @@
     "test:watch": "jest --watchAll",
     "test:coverage": "jest --coverage"
   },
-  "keywords": [],
-  "main": "",
-  "typings": "",
+  "keywords": [
+    "GraphQL"
+  ],
+  "main": "dist/GQ.js",
+  "types": "src",
   "devDependencies": {
     "@babel/preset-typescript": "^7.6.0",
     "@rollup/plugin-babel": "^5.3.0",
@@ -31,5 +33,13 @@
     "typescript": "^4.3.2"
   },
   "author": "8pattern",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/8pattern/GQ.git"
+  },
+  "bugs": {
+    "url": "https://github.com/8pattern/GQ/issues"
+  },
+  "homepage": "https://github.com/8pattern/GQ#readme"
 }

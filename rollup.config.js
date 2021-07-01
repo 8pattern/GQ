@@ -19,8 +19,8 @@ const prodPlugins = [
 export default {
   input: 'src/index.ts',
   output: {
-    file: '',
-    name: '',
+    file: 'dist/GQ.js',
+    name: 'GQ',
     format: 'umd'
   },
   plugins: isProduction ? prodPlugins : devPlugins,
