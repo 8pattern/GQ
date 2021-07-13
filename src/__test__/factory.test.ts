@@ -7,6 +7,16 @@ describe('Field', () => {
     expect(field['#'].type).toBe('field');
     expect(field['#'].name).toBe('fieldName');
   });
+
+  test('Factory generates a function handle, which can be asigned by conditions', () => {
+    expect(field).toBeInstanceOf(Function);
+
+    const condition = {};
+    const fieldWithCondition = field(condition);
+    expect(fieldWithCondition['#'].type).toBe('field');
+    expect(fieldWithCondition['#'].name).toBe('fieldName');
+    expect(fieldWithCondition['#'].condition).toBe(condition);
+  });
 });
 
 describe('Entity', () => {
@@ -37,12 +47,12 @@ describe('Entity', () => {
         f1: field,
         f2: [field],
       }) as any;
-      expect(entity.f1).toEqual(field);
-      expect(entity.f2).toEqual(field);
+      expect(entity.f1['#'].name).toEqual('field');
+      expect(entity.f2['#'].name).toEqual('field');
       
       const entityWithCondition = entity({}) as any;
-      expect(entityWithCondition.f1).toEqual(field);
-      expect(entityWithCondition.f2).toEqual(field);
+      expect(entityWithCondition.f1['#'].name).toEqual('field');
+      expect(entityWithCondition.f2['#'].name).toEqual('field');
     });
 
     test('Entity type', () => {

@@ -75,12 +75,26 @@ export function Field(name: string) {
   const info = {
     type: FieldType.field,
     name,
+    condition: null,
   };
 
-  return new Proxy({}, {
-    get(_, p) {
+  const field = (condition: any) => {
+    info.condition = condition;
+    const obj: any = new Proxy({}, {
+      get: (_: any, p: string) => {
+        if (p === '#') return info;
+        return undefined;
+      },
+    });
+    return obj;
+  };
+  
+  const obj: any = new Proxy(field, {
+    get: (_: any, p: string) => {
       if (p === '#') return info;
       return undefined;
     },
   });
+
+  return obj;
 }
