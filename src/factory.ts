@@ -8,7 +8,36 @@ enum FieldType {
   field = 'field',
 }
 
-export function Entity(name: string, defination: SchemaDefination) {
+function FieldFactory(name: string, parent: any = null) {
+  const metaData = {
+    type: FieldType.field,
+    name,
+    argument: null,
+  };
+
+  const field = (argument: any) => {
+    const obj: any = new Proxy({}, {
+      get: (_: any, p: string) => {
+        if (p === '#') return { ...metaData, argument, };
+        if (p === '#link') return parent;
+        return undefined;
+      },
+    });
+    return obj;
+  };
+  
+  const obj: any = new Proxy(field, {
+    get: (_: any, p: string) => {
+      if (p === '#') return { ...metaData, };
+      if (p === '#link') return parent;
+      return undefined;
+    },
+  });
+
+  return obj;
+}
+
+function EntityFactory(name: string, defination: SchemaDefination, parent: any = null) {
   const mDefination = Object.fromEntries(
     Object.entries(defination)
       .map(([key, value]) => {
@@ -23,27 +52,28 @@ export function Entity(name: string, defination: SchemaDefination) {
       })
   );
   
-  const info = {
+  const metaData = {
     type: FieldType.entity,
     name,
-    condition: null,
+    argument: null,
     defination,
   };
 
-  const entity = (condition: any) => {
-    info.condition = condition;
+  const entity = (argument: any) => {
     const obj: any = new Proxy({}, {
-      get: (_: any, p: string) => {
-        if (p === '#') return info;
-        if (p === '$') return (fields: string[]) => fields.map(item => defination[item])
+      get: (_, p: string) => {
+        if (p === '#') return { ...metaData, argument, };
+        if (p === '#link') return parent;
+        if (p === '$') return (...fields: string[]) => fields.map(item => obj[item])
         if (mDefination.hasOwnProperty(p)) {
-          const target = mDefination[p as string];
-          return new Proxy(target, {
-            get(_, pp) {
-              if (pp === '#link') return obj;
-              return target[pp];
-            }
-          });
+          const subMetaData = mDefination[p]?.['#'];
+          if (subMetaData?.type === FieldType.field) {
+            return FieldFactory(subMetaData.name, obj);
+          }
+          if (subMetaData?.type === FieldType.entity) {
+            return EntityFactory(subMetaData.name, subMetaData.defination, obj);
+          }
+          return mDefination[p];
         }
         return undefined;
       },
@@ -51,50 +81,32 @@ export function Entity(name: string, defination: SchemaDefination) {
     return obj;
   };
   
-  const obj: any = new Proxy(entity, {
-    get: (_: any, p: string) => {
-      if (p === '#') return info;
-      if (p === '$') return (fields: string[]) => fields.map(item => defination[item])
+  const _this: any = new Proxy(entity, {
+    get: (_, p: string) => {
+      if (p === '#') return { ...metaData, };
+      if (p === '#link') return parent;
+      if (p === '$') return (...fields: string[]) => fields.map(item => _this[item])
       if (mDefination.hasOwnProperty(p)) {
-        const target = mDefination[p as string];
-        return new Proxy(target, {
-          get(_, pp) {
-            if (pp === '#link') return obj;
-            return target[pp];
-          }
-        });
+        const subMetaData = mDefination[p]?.['#'];
+        if (subMetaData?.type === FieldType.field) {
+          return FieldFactory(subMetaData.name, _this);
+        }
+        if (subMetaData?.type === FieldType.entity) {
+          return EntityFactory(subMetaData.name, subMetaData.defination, _this);
+        }
+        return mDefination[p];
       }
       return undefined;
     },
   });
 
-  return obj;
+  return _this as any;
 }
 
 export function Field(name: string) {
-  const info = {
-    type: FieldType.field,
-    name,
-    condition: null,
-  };
+  return FieldFactory(name, null);
+}
 
-  const field = (condition: any) => {
-    info.condition = condition;
-    const obj: any = new Proxy({}, {
-      get: (_: any, p: string) => {
-        if (p === '#') return info;
-        return undefined;
-      },
-    });
-    return obj;
-  };
-  
-  const obj: any = new Proxy(field, {
-    get: (_: any, p: string) => {
-      if (p === '#') return info;
-      return undefined;
-    },
-  });
-
-  return obj;
+export function Entity(name: string, defination: SchemaDefination) {
+  return EntityFactory(name, defination, null);
 }
