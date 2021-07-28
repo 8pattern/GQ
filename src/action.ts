@@ -47,7 +47,7 @@ export function encode(...fields: any[]) {
   return encodeFieldObjectToString(fieldObjectList);
 }
 
-export function extract(data: any, ...fields: any[]) {
+export function extract(data: Record<string, any>, ...fields: any[]) {
   return fields
     .map(field => {
       const dir: any[] = [];

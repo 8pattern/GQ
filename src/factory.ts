@@ -65,7 +65,7 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
         if (p === '#') return { ...metaData, argument, };
         if (p === '#link') return parent;
         if (p === '$') return (...fields: string[]) => fields.map(item => obj[item])
-        if (mDefination.hasOwnProperty(p)) {
+        if (p in mDefination) {
           const subMetaData = mDefination[p]?.['#'];
           if (subMetaData?.type === FieldType.field) {
             return FieldFactory(subMetaData.name, obj);
@@ -86,7 +86,7 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
       if (p === '#') return { ...metaData, };
       if (p === '#link') return parent;
       if (p === '$') return (...fields: string[]) => fields.map(item => _this[item])
-      if (mDefination.hasOwnProperty(p)) {
+      if (p in mDefination) {
         const subMetaData = mDefination[p]?.['#'];
         if (subMetaData?.type === FieldType.field) {
           return FieldFactory(subMetaData.name, _this);
