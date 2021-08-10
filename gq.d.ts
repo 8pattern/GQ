@@ -1,59 +1,61 @@
 type SingleOrList<T> = T | T[];
 
-type IFieldType = SingleOrList<number | string | boolean | null | { [key: string]: IFieldType }>;
-type ISchemaDefination = Record<string, SingleOrList<IEntity | IField>>;
+type IScaleType = SingleOrList<number | string | boolean | null | { [key: string]: IScaleType }>;
+type ISchemaDefination = Record<string, SingleOrList<IEntity | IScale>>;
 
-type IFieldTypeInner = any;
+type IScaleTypeInner = any;
 type ISchemaDefinationInner = Record<string, any>;
 
 type IArgumentValue = number | string | boolean | null | { [key: string]: IArgumentValue };
 type IArgument = Record<string, IArgumentValue> | null;
 
-type TransferField<T> = 
+type TransferScale<T> = 
   T extends (infer V)[]
     ? (
-      V extends IEntity<infer S, infer C> ? IEntity<{ [SK in keyof S]: TransferField<TransferField<S[SK]>[]> }, C> : 
-      V extends IField<infer FT, infer FC> ? IField<FT[], FC> :
+      V extends IEntity<infer S, infer C> ? IEntity<{ [SK in keyof S]: TransferScale<TransferScale<S[SK]>[]> }, C> : 
+      V extends IScale<infer FT, infer FC> ? IScale<FT[], FC> :
       T
     )
     : (
-      T extends IEntity<infer S, infer C> ? IEntity<{ [SK in keyof S]: TransferField<TransferField<S[SK]>> }, C> : 
-      T extends IField<infer FT, infer FC> ? IField<FT, FC> :
+      T extends IEntity<infer S, infer C> ? IEntity<{ [SK in keyof S]: TransferScale<TransferScale<S[SK]>> }, C> : 
+      T extends IScale<infer FT, infer FC> ? IScale<FT, FC> :
       T
     );
 
-interface IFieldObject<T extends IFieldTypeInner> {}
+interface IScaleObject<T extends IScaleTypeInner> {}
 
-type IFieldCollection<T extends Record<string, any>> = {
+type IScaleCollection<T extends Record<string, any>> = {
   [key: number]: unknown;
 }
 
+type 
+
 type IEntityObject<S extends ISchemaDefinationInner> = {
-  $<F extends keyof S>(...field: F[]): IFieldCollection<{ [R in F]: TransferField<S[R]> }>;
+  $<F extends keyof S>(...scale: F[]): IScaleCollection<{ [R in F]: TransferScale<S[R]> }>;
 } & {
-  [K in keyof S]: TransferField<S[K]>
+  [K in keyof S]: TransferScale<S[K]>
 }
 
 type IEntity<S extends ISchemaDefinationInner = any, C extends IArgument = null> = (IEntityObject<S>) & ((argument: C) => IEntityObject<S>);
 
-type IField<T extends IFieldTypeInner = any, C extends IArgument = null> = IFieldObject<T> & ((argument: C) => IFieldObject<T>);
+type IScale<T extends IScaleTypeInner = any, C extends IArgument = null> = IScaleObject<T> & ((argument: C) => IScaleObject<T>);
 
 export function Entity<Argument extends IArgument = null, S extends ISchemaDefination = ISchemaDefination>(name: string, schema: S): IEntity<S, Argument>;
-export function Field<Argument extends IArgument = null, T extends IFieldType = any>(name: string): IField<T, Argument>;
+export function Scale<Argument extends IArgument = null, T extends IScaleType = any>(name: string): IScale<T, Argument>;
 
 type ExactResult<T extends ValidActionTarget[]> = {
   [K in keyof T]:
-    T[K] extends IField<infer F> ? F :
-    T[K] extends IFieldCollection<infer C> ? { [CK in keyof C]: C[CK] extends IField<infer F> ? F : unknown } :
-    T[K] extends IFieldObject<infer F> ? F :
+    T[K] extends IScale<infer F> ? F :
+    T[K] extends IScaleCollection<infer C> ? { [CK in keyof C]: C[CK] extends IScale<infer F> ? F : unknown } :
+    T[K] extends IScaleObject<infer F> ? F :
     unknown;
 }
 
 export function registerRequest(request: (graphql: string) => Promise<any>): void
 
-type ValidActionTarget = IField | IFieldCollection<any> | IFieldObject<any>;
+type ValidActionTarget = IScale | IScaleCollection<any> | IScaleObject<any>;
 
-export function Action<F extends ValidActionTarget[]>(actionName: string, ...fields: F): ExactResult<F>;
+export function Action<F extends ValidActionTarget[]>(actionName: string, ...scales: F): ExactResult<F>;
 
-export function Query<F extends ValidActionTarget[]>(...fields: F): ExactResult<F>;
-export function Mutation<F extends ValidActionTarget[]>(...fields: F): ExactResult<F>;
+export function Query<F extends ValidActionTarget[]>(...scales: F): ExactResult<F>;
+export function Mutation<F extends ValidActionTarget[]>(...scales: F): ExactResult<F>;
