@@ -1,7 +1,7 @@
 type SingleOrList<T> = T | T[];
 
 type IScaleType = SingleOrList<number | string | boolean | null | { [key: string]: IScaleType }>;
-type ISchemaDefination = Record<string, SingleOrList<IEntity | IScale>>;
+type ISchemaDefination = Record<string, SingleOrList<IScale | IEntity>>;
 
 type IScaleTypeInner = any;
 type ISchemaDefinationInner = Record<string, any>;
@@ -38,12 +38,12 @@ type IEntityObject<S extends ISchemaDefinationInner> = {
   [K in keyof S]: TransferScale<S[K]>
 }
 
-type IEntity<S extends ISchemaDefinationInner = any, C extends IArgument = null> = (IEntityObject<S>) & ((argument: C) => IEntityObject<S>);
+type IEntity<S extends ISchemaDefinationInner = any, Argument extends IArgument = any> = (IEntityObject<S>) & ((argument: Argument) => IEntityObject<S>);
 
-type IScale<T extends IScaleTypeInner = any, C extends IArgument = null> = IScaleObject<T> & ((argument: C) => IScaleObject<T>);
+type IScale<T extends IScaleTypeInner = any, Argument extends IArgument = any> = IScaleObject<T> & ((argument: Argument) => IScaleObject<T>);
 
-export function Entity<Argument extends IArgument = null, S extends ISchemaDefination = ISchemaDefination>(name: string, schema: S): IEntity<S, Argument>;
-export function Scale<Argument extends IArgument = null, T extends IScaleType = any>(name: string): IScale<T, Argument>;
+export function Entity<Argument extends IArgument = any, S extends ISchemaDefination = ISchemaDefination>(name: string, schema: S): IEntity<S, Argument>;
+export function Scale<Argument extends IArgument = any, T extends IScaleType = any>(name: string): IScale<T, Argument>;
 
 type ExactResult<T extends ValidActionTarget[]> = {
   [K in keyof T]:
