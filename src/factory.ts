@@ -28,6 +28,7 @@ function ScaleFactory(name: string, parent: any = null) {
   
   const obj: any = new Proxy(scale, {
     get: (_: any, p: string) => {
+      if (p === '#type') return FieldType.scale;
       if (p === '#') return { ...metaData, };
       if (p === '#link') return parent;
       return undefined;
@@ -83,6 +84,7 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
   
   const _this: any = new Proxy(entity, {
     get: (_, p: string) => {
+      if (p === '#type') return FieldType.entity;
       if (p === '#') return { ...metaData, };
       if (p === '#link') return parent;
       if (p === '$') return (...fields: string[]) => fields.map(item => _this[item])

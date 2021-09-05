@@ -3,6 +3,10 @@ import { Entity, Scale } from '../factory';
 describe('Scale', () => {
   const scale = Scale('scaleName');
 
+  test('public properties are right', () => {
+    expect(scale['#type']).toBe('Scale');
+  });
+
   test('Private properties are right', () => {
     expect(scale['#'].type).toBe('Scale');
     expect(scale['#'].name).toBe('scaleName');
@@ -20,6 +24,12 @@ describe('Scale', () => {
 });
 
 describe('Entity', () => {
+  test('public properties are right', () => {
+    const defination = {};
+    const entity = Entity('entityName', defination);
+    expect(entity['#type']).toBe('Entity');
+  });
+
   test('Private properties are right', () => {
     const defination = {};
     const entity = Entity('entityName', defination);

@@ -22,7 +22,9 @@ type TransferScale<T> =
       T
     );
 
-interface IScaleObject<T extends IScaleTypeInner> {}
+type IScaleObject<T extends IScaleTypeInner> = {
+  '#type': 'Scale',
+}
 
 type IScaleCollection<T extends Record<string, any>> = {
   [key: number]: unknown;
@@ -36,6 +38,8 @@ type IEntityObject<S extends ISchemaDefinationInner> = {
   $<F extends ScaleKey<S>>(...scale: F[]): IScaleCollection<{ [R in F]: TransferScale<S[R]> }>;
 } & {
   [K in keyof S]: TransferScale<S[K]>
+} & {
+  '#type': 'Entity',
 }
 
 type IEntity<S extends ISchemaDefinationInner = any, Argument extends IArgument = any> = (IEntityObject<S>) & ((argument: Argument) => IEntityObject<S>);
