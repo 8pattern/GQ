@@ -1,7 +1,8 @@
 type SingleOrList<T> = T | T[];
+type ReturnValueFunction<R> = () => R 
 
 type IScaleType = SingleOrList<number | string | boolean | null | { [key: string]: IScaleType }>;
-type ISchemaDefination = Record<string, SingleOrList<IScale | IEntity>>;
+type ISchemaDefination = Record<string, SingleOrList<IScale | IEntity | ReturnValueFunction<IEntity>>>;
 
 type IScaleTypeInner = any;
 type ISchemaDefinationInner = Record<string, any>;
@@ -12,12 +13,12 @@ type IArgument = Record<string, IArgumentValue> | null;
 type TransferScale<T> = 
   T extends (infer V)[]
     ? (
-      V extends IEntity<infer S, infer C> ? IEntity<{ [SK in keyof S]: TransferScale<TransferScale<S[SK]>[]> }, C> : 
+      V extends (IEntity<infer S, infer C> | ReturnValueFunction<IEntity<infer S, infer C>>) ? IEntity<{ [SK in keyof S]: TransferScale<TransferScale<S[SK]>[]> }, C> : 
       V extends IScale<infer FT, infer FC> ? IScale<FT[], FC> :
       T
     )
     : (
-      T extends IEntity<infer S, infer C> ? IEntity<{ [SK in keyof S]: TransferScale<TransferScale<S[SK]>> }, C> : 
+      T extends (IEntity<infer S, infer C> | ReturnValueFunction<IEntity<infer S, infer C>>) ? IEntity<{ [SK in keyof S]: TransferScale<TransferScale<S[SK]>> }, C> : 
       T extends IScale<infer FT, infer FC> ? IScale<FT, FC> :
       T
     );

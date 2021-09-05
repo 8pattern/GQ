@@ -16,12 +16,14 @@ describe('Encode', () => {
       e: Entity('e', {
         ef: Scale('ef'),
       }),
+      me: () => entity,
     });
     
     expect(encode(entity.f)).toBe('{entity{f}}');
     expect(encode(entity.$('f', 'f2'))).toBe('{entity{f,f2}}');
     expect(encode(entity.f, entity.e)).toBe('{entity{f,e{}}}');
     expect(encode(entity.f, entity.e.ef)).toBe('{entity{f,e{ef}}}');
+    expect(encode(entity.me.f, entity.me.me.f)).toBe('{entity{entity{f},entity{entity{f}}}}');
 
     expect(encode(entity({a: 1}).$('f', 'f2'))).toBe('{entity(a:1){f,f2}}');
     expect(encode(entity({a: 1}).f, entity.e.ef)).toBe('{entity(a:1){f},entity{e{ef}}}');

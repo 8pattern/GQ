@@ -45,7 +45,7 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
         let v = value;
         while (v instanceof Array) {
           if (v.length > 1) {
-            throw new Error(`Only can define one type in "${key}"`);
+            throw new Error(`Only one type can be defined in "${key}"`);
           }
           v = v[0];
         }
@@ -67,14 +67,22 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
         if (p === '#link') return parent;
         if (p === '$') return (...fields: string[]) => fields.map(item => obj[item])
         if (p in mDefination) {
-          const subMetaData = mDefination[p]?.['#'];
+          let target = mDefination[p];
+          if (![FieldType.entity, FieldType.scale].includes(target?.['#']?.type) && target instanceof Function) {
+            const r = target();
+            if (r?.['#']?.type !== FieldType.entity) {
+              console.warn(`Only Entity needs a function defination in "${p}", consider replacing it without function`);
+            }
+            target = r;
+          }
+          const subMetaData = target?.['#'];
           if (subMetaData?.type === FieldType.scale) {
             return ScaleFactory(subMetaData.name, obj);
           }
           if (subMetaData?.type === FieldType.entity) {
             return EntityFactory(subMetaData.name, subMetaData.defination, obj);
           }
-          return mDefination[p];
+          return target;
         }
         return undefined;
       },
@@ -89,14 +97,22 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
       if (p === '#link') return parent;
       if (p === '$') return (...fields: string[]) => fields.map(item => _this[item])
       if (p in mDefination) {
-        const subMetaData = mDefination[p]?.['#'];
+        let target = mDefination[p];
+        if (![FieldType.entity, FieldType.scale].includes(target?.['#']?.type) && target instanceof Function) {
+          const r = target();
+          if (r?.['#']?.type !== FieldType.entity) {
+            console.warn(`Only Entity needs a function defination in "${p}", please check it.`);
+          }
+          target = r;
+        }
+        const subMetaData = target?.['#'];
         if (subMetaData?.type === FieldType.scale) {
           return ScaleFactory(subMetaData.name, _this);
         }
         if (subMetaData?.type === FieldType.entity) {
           return EntityFactory(subMetaData.name, subMetaData.defination, _this);
         }
-        return mDefination[p];
+        return target;
       }
       return undefined;
     },

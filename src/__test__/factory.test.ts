@@ -145,6 +145,19 @@ describe('Entity', () => {
         expect(entity.e['#link']['#'].name).toBe('entity');
         expect(entity.e.f['#link']['#link']['#'].name).toBe('entity');
       });
+
+      test('Able to receiving a function which returns an Entity, in order to reference itself', () => {
+        const entity = Entity('entity', {
+          me: () => entity,
+          we: [() => entity],
+        });
+        expect(entity.me['#'].name).toBe('entity');
+        expect(entity.we['#'].name).toBe('entity');
+        expect(entity.me['#link']['#'].name).toBe('entity');
+        expect(entity.we['#link']['#'].name).toBe('entity');
+        expect(entity.me.me['#link']['#link']['#'].name).toBe('entity');
+        expect(entity.me.we['#link']['#link']['#'].name).toBe('entity');
+      })
     });
 
     test('`$` will get properties', () => {
