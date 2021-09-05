@@ -4,18 +4,18 @@ type SchemaValueType = SingleOrList<any>;
 type SchemaDefination = Record<string, SchemaValueType>;
 
 enum FieldType {
-  entity = 'entity',
-  field = 'field',
+  entity = 'Entity',
+  scale = 'Scale',
 }
 
-function FieldFactory(name: string, parent: any = null) {
+function ScaleFactory(name: string, parent: any = null) {
   const metaData = {
-    type: FieldType.field,
+    type: FieldType.scale,
     name,
     argument: null,
   };
 
-  const field = (argument: any) => {
+  const scale = (argument: any) => {
     const obj: any = new Proxy({}, {
       get: (_: any, p: string) => {
         if (p === '#') return { ...metaData, argument, };
@@ -26,7 +26,7 @@ function FieldFactory(name: string, parent: any = null) {
     return obj;
   };
   
-  const obj: any = new Proxy(field, {
+  const obj: any = new Proxy(scale, {
     get: (_: any, p: string) => {
       if (p === '#') return { ...metaData, };
       if (p === '#link') return parent;
@@ -67,8 +67,8 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
         if (p === '$') return (...fields: string[]) => fields.map(item => obj[item])
         if (p in mDefination) {
           const subMetaData = mDefination[p]?.['#'];
-          if (subMetaData?.type === FieldType.field) {
-            return FieldFactory(subMetaData.name, obj);
+          if (subMetaData?.type === FieldType.scale) {
+            return ScaleFactory(subMetaData.name, obj);
           }
           if (subMetaData?.type === FieldType.entity) {
             return EntityFactory(subMetaData.name, subMetaData.defination, obj);
@@ -88,8 +88,8 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
       if (p === '$') return (...fields: string[]) => fields.map(item => _this[item])
       if (p in mDefination) {
         const subMetaData = mDefination[p]?.['#'];
-        if (subMetaData?.type === FieldType.field) {
-          return FieldFactory(subMetaData.name, _this);
+        if (subMetaData?.type === FieldType.scale) {
+          return ScaleFactory(subMetaData.name, _this);
         }
         if (subMetaData?.type === FieldType.entity) {
           return EntityFactory(subMetaData.name, subMetaData.defination, _this);
@@ -103,8 +103,8 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
   return _this as any;
 }
 
-export function Field(name: string) {
-  return FieldFactory(name, null);
+export function Scale(name: string) {
+  return ScaleFactory(name, null);
 }
 
 export function Entity(name: string, defination: SchemaDefination) {

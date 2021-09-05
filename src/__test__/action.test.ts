@@ -1,20 +1,20 @@
-import { Entity, Field } from '../factory';
+import { Entity, Scale } from '../factory';
 import { encode, extract, registerRequest, Action, Query, Mutation, } from '../action';
 
 describe('Encode', () => {
-  test('Field can be transfer to graphql string', () => {
-    const field = Field('field');
+  test('Scale can be transfer to graphql string', () => {
+    const scale = Scale('scale');
     
-    expect(encode(field)).toBe('{field}');
-    expect(encode(field({a: 1, b: '2'}))).toBe('{field(a:1,b:"2")}');
+    expect(encode(scale)).toBe('{scale}');
+    expect(encode(scale({a: 1, b: '2'}))).toBe('{scale(a:1,b:"2")}');
   });
 
-  test('Field in entity can be transfer to graphql string', () => {
+  test('Scale in entity can be transfer to graphql string', () => {
     const entity = Entity('entity', {
-      f: Field('f'),
-      f2: Field('f2'),
+      f: Scale('f'),
+      f2: Scale('f2'),
       e: Entity('e', {
-        ef: Field('ef'),
+        ef: Scale('ef'),
       }),
     });
     
@@ -29,12 +29,12 @@ describe('Encode', () => {
     expect(encode(entity({a: 1}).f, entity.e({b: '2'}).ef({c: true}))).toBe('{entity(a:1){f},entity{e(b:"2"){ef(c:true)}}}');
   });
 
-  test('Field with arguments in entity can be transfer to graphql string', () => {
+  test('Scale with arguments in entity can be transfer to graphql string', () => {
     const entity = Entity('entity', {
-      f: Field('f'),
-      f2: Field('f2'),
+      f: Scale('f'),
+      f2: Scale('f2'),
       e: Entity('e', {
-        ef: Field('ef'),
+        ef: Scale('ef'),
       }),
     });
     
@@ -51,16 +51,16 @@ describe('Encode', () => {
 
   test('Entity defination can be composed', () => {
     const extra = {
-      fe: Field('fe'),
+      fe: Scale('fe'),
     };
 
     const e1 = Entity('e1', {
-      f1: Field('f1'),
+      f1: Scale('f1'),
       ...extra,
     });
 
     const e2 = Entity('e2', {
-      f2: Field('f2'),
+      f2: Scale('f2'),
       ...extra,
     });
     
@@ -74,10 +74,10 @@ describe('Encode', () => {
 describe('Extract', () => {
   test('Extract data correctly', () => {
     const entity = Entity('entity', {
-      f1: Field('f1'),
-      f2: Field('f2'),
+      f1: Scale('f1'),
+      f2: Scale('f2'),
       e: Entity('e', {
-        ef: Field('ef'),
+        ef: Scale('ef'),
       }),
     });
 
@@ -105,8 +105,8 @@ describe('Extract', () => {
 
 describe('Action', () => {
   const entity = Entity('entity', {
-    f1: Field('f1'),
-    f2: Field('f2'),
+    f1: Scale('f1'),
+    f2: Scale('f2'),
   });
 
   const data = {

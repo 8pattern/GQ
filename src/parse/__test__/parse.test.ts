@@ -1,14 +1,14 @@
-import { Field, Entity, } from '../dataType';
+import { Scale, Entity, } from '../dataType';
 import parse from '../parse';
 
-const baseField: Field = {
-  type: 'field',
+const baseScale: Scale = {
+  type: 'Scale',
   name: 'f',
   argument: null,
 };
 
 const baseSchema: Entity = {
-  type: 'entity',
+  type: 'Entity',
   name: 's',
   argument: null,
   children: [],
@@ -18,20 +18,20 @@ test('Pure Entity', () => {
   expect(parse({ ...baseSchema })).toBe('s{}');
 });
 
-test('With fields', () => {
-  expect(parse({ ...baseSchema, children: [{ ...baseField }], })).toBe('s{f}');
-  expect(parse({ ...baseSchema, children: [{ ...baseField }, { ...baseField, name: 'f1' }], })).toBe('s{f,f1}');
-  expect(parse({ ...baseSchema, children: [{ ...baseField }, [{ ...baseField, name: 'f1' }]], })).toBe('s{f,f1}');
+test('With scales', () => {
+  expect(parse({ ...baseSchema, children: [{ ...baseScale }], })).toBe('s{f}');
+  expect(parse({ ...baseSchema, children: [{ ...baseScale }, { ...baseScale, name: 'f1' }], })).toBe('s{f,f1}');
+  expect(parse({ ...baseSchema, children: [{ ...baseScale }, [{ ...baseScale, name: 'f1' }]], })).toBe('s{f,f1}');
 
   expect(
     parse(
       {
         ...baseSchema,
         children: [
-          { ...baseField },
-          { ...baseSchema, name: 's2', children: [{ ...baseField }] },
-          [{ ...baseSchema, name: 's3', children: [{ ...baseField }, [{ ...baseField, name: 'f1' }],] }],
-          [{ ...baseField, name: 'f1' }],
+          { ...baseScale },
+          { ...baseSchema, name: 's2', children: [{ ...baseScale }] },
+          [{ ...baseSchema, name: 's3', children: [{ ...baseScale }, [{ ...baseScale, name: 'f1' }],] }],
+          [{ ...baseScale, name: 'f1' }],
         ],
       }
     )
@@ -39,6 +39,6 @@ test('With fields', () => {
 });
 
 test('With argument', () => {
-  expect(parse({ ...baseField, argument: { c1: 1, c2: '2', c3: true, c4: null, c5: { o: {} } } })).toBe('f(c1:1,c2:"2",c3:true,c4:null,c5:{"o":{}})');
+  expect(parse({ ...baseScale, argument: { c1: 1, c2: '2', c3: true, c4: null, c5: { o: {} } } })).toBe('f(c1:1,c2:"2",c3:true,c4:null,c5:{"o":{}})');
   expect(parse({ ...baseSchema, argument: { c1: 1, c2: '2', c3: true, c4: null, c5: { o: {} } } })).toBe('s(c1:1,c2:"2",c3:true,c4:null,c5:{"o":{}}){}');
 });

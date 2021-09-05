@@ -1,4 +1,4 @@
-import { Entity, Field, } from './dataType';
+import { Entity, Scale, } from './dataType';
 
 function parseArgument(argument: Entity['argument']) {
   if (!argument) return '';
@@ -9,26 +9,26 @@ function parseArgument(argument: Entity['argument']) {
   })`;
 }
 
-function parseFields(fields: Entity['children']) {
-  return fields
-    .map(field => {
-      const el = field instanceof Array ? field[0] : field;
+function parseScales(scales: Entity['children']) {
+  return scales
+    .map(scale => {
+      const el = scale instanceof Array ? scale[0] : scale;
       return parse(el);
     })
     .join(',');
 }
 
-export default function parse(el: Entity | Field): string {
+export default function parse(el: Entity | Scale): string {
   const {
     type,
     name,
     argument,
   } = el;
-  if (type === 'entity') {
+  if (type === 'Entity') {
     return [
       name,
       parseArgument(argument),
-      `{${parseFields((el as Entity).children)}}`,
+      `{${parseScales((el as Entity).children)}}`,
     ].filter(Boolean).join('');
   }
   return [

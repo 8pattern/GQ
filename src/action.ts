@@ -1,30 +1,30 @@
-import { Entity, Field, } from './factory';
+import { Entity, Scale, } from './factory';
 import { parse, } from './parse';
 
-function converToFieldObjectList(field: typeof Field) {
+function converToScaleObjectList(scale: typeof Scale) {
   const linkList: any[] = [];
-  let current = field;
+  let current = scale;
 
   while (current) {
     linkList.push(current);
     current = current['#link'];
   }
-  return linkList.reverse() as (typeof Entity | typeof Field)[];
+  return linkList.reverse() as (typeof Entity | typeof Scale)[];
 }
 
-function encodeFieldObjectToString(fieldObjectList: any[]) {
+function encodeScaleObjectToString(scaleObjectList: any[]) {
   const parseBody = {
-    type: 'entity',
+    type: 'Entity',
     name: '',
     argument: null,
     children: [],
   }
-  const fieldObjectMap = new Map();
-  fieldObjectList.forEach(list => {
+  const scaleObjectMap = new Map();
+  scaleObjectList.forEach(list => {
     let current: any = parseBody;
     list.forEach((item: any) => {
-      if (fieldObjectMap.has(item)) {
-        current = fieldObjectMap.get(item);
+      if (scaleObjectMap.has(item)) {
+        current = scaleObjectMap.get(item);
       } else {
         const { type, name, argument, } = item['#'];
         const obj = {
@@ -34,7 +34,7 @@ function encodeFieldObjectToString(fieldObjectList: any[]) {
           children: [],
         };
         current.children.push(obj);
-        fieldObjectMap.set(item, obj);
+        scaleObjectMap.set(item, obj);
         current = obj;
       }
     });
@@ -42,19 +42,19 @@ function encodeFieldObjectToString(fieldObjectList: any[]) {
   return parse(parseBody as any);
 }
 
-export function encode(...fields: any[]) {
-  const fieldObjectList = fields.flatMap(v => v).map(converToFieldObjectList);
-  return encodeFieldObjectToString(fieldObjectList);
+export function encode(...scales: any[]) {
+  const scaleObjectList = scales.flatMap(v => v).map(converToScaleObjectList);
+  return encodeScaleObjectToString(scaleObjectList);
 }
 
-export function extract(data: Record<string, any>, ...fields: any[]) {
-  return fields
-    .map(field => {
+export function extract(data: Record<string, any>, ...scales: any[]) {
+  return scales
+    .map(scale => {
       const dir: any[] = [];
-      let current = field;
-      if (field instanceof Array) {
-        dir.push(field.map(item => item['#'].name));
-        current = field[0]['#link'];
+      let current = scale;
+      if (scale instanceof Array) {
+        dir.push(scale.map(item => item['#'].name));
+        current = scale[0]['#link'];
       }
       while (current) {
         dir.push(current['#'].name);
@@ -80,10 +80,10 @@ export function registerRequest(handle: RequestHandle) {
   requestHandle = handle
 }
 
-export async function Action(actionName: string, ...fields: any[]) {
+export async function Action(actionName: string, ...scales: any[]) {
   const graphqlStr = [
     actionName,
-    encode(...fields),
+    encode(...scales),
   ].filter(Boolean).join(' ');
 
   if (!requestHandle) {
@@ -92,7 +92,7 @@ export async function Action(actionName: string, ...fields: any[]) {
   }
 
   const data = await requestHandle(graphqlStr);
-  const res = extract(data, ...fields);
+  const res = extract(data, ...scales);
   return res;
 }
 

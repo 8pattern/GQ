@@ -2,15 +2,15 @@ interface Base {
   name: string;
 }
 
-export interface Field extends Base {
-  type: 'field';
+export interface Scale extends Base {
+  type: 'Scale';
   argument: Record<string, ArgumentValue> | null;
 }
 
 type ArgumentValue = number | string | boolean | null | { [key: string]: ArgumentValue };
 
 export interface Entity extends Base {
-  type: 'entity';
+  type: 'Entity';
   argument: Record<string, ArgumentValue> | null;
-  children: (Entity | [Entity] | Field | [Field])[];
+  children: (Entity | [Entity] | Scale | [Scale])[];
 }
