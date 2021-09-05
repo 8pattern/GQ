@@ -1,2 +1,2 @@
-export { Entity, Field, } from './factory';
+export { Entity, Scale, } from './factory';
 export { registerRequest, Action, Query, Mutation, } from './action';
