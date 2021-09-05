@@ -121,10 +121,10 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
   return _this as any;
 }
 
-export function Scale(name: string) {
+export function Scale(name: string): any {
   return ScaleFactory(name, null);
 }
 
-export function Entity(name: string, defination: SchemaDefination) {
+export function Entity(name: string, defination: SchemaDefination): any {
   return EntityFactory(name, defination, null);
 }
