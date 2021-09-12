@@ -1,23 +1,10 @@
 import { Entity, Scale } from '../factory';
-import { registerRequest, Action, Query, Mutation, } from '../action';
-
-afterEach(() => {
-  registerRequest(null);
-});
-
-
-test('If not register request handle, it will return a empty list', async () => {
-  registerRequest(null);
-  expect(await Action('')).toEqual([]);
-});
+import { register, } from '../action';
 
 describe('Encode correctly', () => {
-  const fn = jest.fn();
-  beforeEach(() => {
-    registerRequest(fn);
-  });
-
   test('Scale can be transfered to graphql string', async () => {
+    const fn = jest.fn();
+    const { Action } = register(fn);
     const scale = Scale('scale');
     await Action('', scale);
     expect(fn).toHaveBeenLastCalledWith('{scale}');
@@ -26,6 +13,8 @@ describe('Encode correctly', () => {
   });
 
   test('Scale in entity can be transfer to graphql string', async () => {
+    const fn = jest.fn();
+    const { Action } = register(fn);
     const entity = Entity('entity', {
       f: Scale('f'),
       f2: Scale('f2'),
@@ -54,6 +43,9 @@ describe('Encode correctly', () => {
   });
 
   test('Entity definations can be composed', async () => {
+    const fn = jest.fn();
+    const { Action } = register(fn);
+    
     const extra = {
       fe: Scale('fe'),
     };
@@ -78,7 +70,7 @@ describe('Encode correctly', () => {
 
   test('Conflict fields will be split apart', async () => {
     const fn = jest.fn();
-    registerRequest(fn);
+    const { Action } = register(fn);
 
     const entity = Entity('entity', {
       f: Scale('f'),
@@ -114,45 +106,46 @@ describe('Encode correctly', () => {
 
 
 test('Extract correctly', async () => {
-    const entity = Entity('entity', {
-      f1: Scale('f1'),
-      f2: Scale('f2'),
-      e: Entity('e', {
-        ef: Scale('ef'),
-      }),
-      me: () => entity,
-    });
+  const fn = jest.fn(async () => data);
+  const { Action } = register(fn);
 
-    const data = {
-      entity: {
-        f1: 'f1',
-        f2: 'f2',
-        e: {
-          ef: 'ef',
-        },
-        entity: {
-          f1: 'ef1',
-          f2: 'ef2',
-        }
+  const entity = Entity('entity', {
+    f1: Scale('f1'),
+    f2: Scale('f2'),
+    e: Entity('e', {
+      ef: Scale('ef'),
+    }),
+    me: () => entity,
+  });
+
+  const data = {
+    entity: {
+      f1: 'f1',
+      f2: 'f2',
+      e: {
+        ef: 'ef',
       },
-    };
+      entity: {
+        f1: 'ef1',
+        f2: 'ef2',
+      }
+    },
+  };
 
-    registerRequest(jest.fn(async () => data));
+  expect(await Action('', entity.f1)).toEqual(['f1']);
+  expect(await Action('', entity.f1, entity.f2)).toEqual(['f1', 'f2']);
+  expect(await Action('', entity.f1, entity.f2, entity.e.ef)).toEqual(['f1', 'f2', 'ef']);
+  expect(await Action('', entity.$('f1', 'f2'), entity.e.ef)).toEqual([{f1: 'f1', f2: 'f2'}, 'ef']);
+  expect(await Action('', entity.me.f1)).toEqual(['ef1']);
 
-    expect(await Action('', entity.f1)).toEqual(['f1']);
-    expect(await Action('', entity.f1, entity.f2)).toEqual(['f1', 'f2']);
-    expect(await Action('', entity.f1, entity.f2, entity.e.ef)).toEqual(['f1', 'f2', 'ef']);
-    expect(await Action('', entity.$('f1', 'f2'), entity.e.ef)).toEqual([{f1: 'f1', f2: 'f2'}, 'ef']);
-    expect(await Action('', entity.me.f1)).toEqual(['ef1']);
+  expect(await Action('', entity({a: 1}).f1)).toEqual(['f1']);
+  expect(await Action('', entity.f1({a: 1}), entity.f2({a: 1}))).toEqual(['f1', 'f2']);
+  expect(await Action('', entity({a: 1}).f1, entity.f2({a: 1}), entity.e({a: 1}).ef)).toEqual(['f1', 'f2', 'ef']);
+  expect(await Action('', entity({a: 1}).$('f1', 'f2'), entity.e.ef({a: 1}))).toEqual([{f1: 'f1', f2: 'f2'}, 'ef']);
 
-    expect(await Action('', entity({a: 1}).f1)).toEqual(['f1']);
-    expect(await Action('', entity.f1({a: 1}), entity.f2({a: 1}))).toEqual(['f1', 'f2']);
-    expect(await Action('', entity({a: 1}).f1, entity.f2({a: 1}), entity.e({a: 1}).ef)).toEqual(['f1', 'f2', 'ef']);
-    expect(await Action('', entity({a: 1}).$('f1', 'f2'), entity.e.ef({a: 1}))).toEqual([{f1: 'f1', f2: 'f2'}, 'ef']);
-
-    expect(await Action('', entity.f1, entity.$('f1', 'f2'))).toEqual(['f1', { f1: 'f1', f2: 'f2' }]);
-    expect(await Action('', entity.f1, entity.$('f1', 'f2'), entity.f2)).toEqual(['f1', { f1: 'f1', f2: 'f2' }, 'f2']);
-    expect(await Action('', entity.$('f1', 'f2'), entity.me.$('f1'))).toEqual([{ f1: 'f1', f2: 'f2' }, { f1: 'ef1' }]);
+  expect(await Action('', entity.f1, entity.$('f1', 'f2'))).toEqual(['f1', { f1: 'f1', f2: 'f2' }]);
+  expect(await Action('', entity.f1, entity.$('f1', 'f2'), entity.f2)).toEqual(['f1', { f1: 'f1', f2: 'f2' }, 'f2']);
+  expect(await Action('', entity.$('f1', 'f2'), entity.me.$('f1'))).toEqual([{ f1: 'f1', f2: 'f2' }, { f1: 'ef1' }]);
 });
 
 describe('Custom actions', () => {
@@ -170,7 +163,8 @@ describe('Custom actions', () => {
 
   test('Query', async () => {
     const fn = jest.fn(async () => data);
-    registerRequest(fn);
+    const { Query } = register(fn);
+
     await Query(entity.f1, entity.f2)
     expect(fn).toHaveBeenCalledWith('query {entity{f1,f2}}');
     expect(await Query(entity.f1, entity.f2)).toEqual(['f1', 'f2']);
@@ -179,10 +173,36 @@ describe('Custom actions', () => {
 
   test('Mutation', async () => {
     const fn = jest.fn(async () => data);
-    registerRequest(fn);
+    const { Mutation } = register(fn);
     await Mutation(entity.f1, entity.f2)
     expect(fn).toHaveBeenCalledWith('mutation {entity{f1,f2}}');
     expect(await Mutation(entity.f1, entity.f2)).toEqual(['f1', 'f2']);
     expect(await Mutation(entity.$('f1', 'f2'))).toEqual([{f1: 'f1', f2: 'f2'}]);
   });
 });
+
+test('Different registered handles won`t be influened by others', async () => {
+  const s = Scale('s');
+
+  const f1 = jest.fn(async () => ({s: 1}))
+  const { Action: Action1, Mutation: Mutation1, Query: Query1 } = register(f1);
+  const f2 = jest.fn(async () => ({s: 2}))
+  const { Action: Action2, Mutation: Mutation2, Query: Query2 } = register(f2);
+
+  const [res_a1] = await Action1('', s);
+  const [res_m1] = await Mutation1(s);
+  const [res_q1] = await Query1(s);
+  const [res_a2] = await Action2('', s);
+  const [res_m2] = await Mutation2(s);
+  const [res_q2] = await Query2(s);
+  
+  expect(f1).toBeCalledTimes(3);
+  expect(f2).toBeCalledTimes(3);
+
+  expect(res_a1).toBe(1);
+  expect(res_m1).toBe(1);
+  expect(res_q1).toBe(1);
+  expect(res_a2).toBe(2);
+  expect(res_m2).toBe(2);
+  expect(res_q2).toBe(2);
+})

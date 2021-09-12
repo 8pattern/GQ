@@ -58,11 +58,12 @@ type ExactResult<T extends ValidActionTarget[]> = {
     unknown;
 }
 
-export function registerRequest(request: (graphql: string) => Promise<any>): void
-
 type ValidActionTarget = IScale | IScaleCollection<any> | IScaleObject<any>;
 
-export function Action<F extends ValidActionTarget[]>(actionName: string, ...scales: F): ExactResult<F>;
+export function register(request: (graphql: string) => Promise<any>): {
+  Query: <F extends ValidActionTarget[]>(...scales: F) => ExactResult<F>,
+  Mutation: <F extends ValidActionTarget[]>(...scales: F) => ExactResult<F>,
+  Action: <F extends ValidActionTarget[]>(actionName: string, ...scales: F) => ExactResult<F>,
+}
 
-export function Query<F extends ValidActionTarget[]>(...scales: F): ExactResult<F>;
-export function Mutation<F extends ValidActionTarget[]>(...scales: F): ExactResult<F>;
+export function Query<F extends ValidActionTarget[]>(...scales: F): ExactResult<F>

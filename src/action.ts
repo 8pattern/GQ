@@ -148,25 +148,20 @@ function extract(data: Record<string, any>[], scaleObjectChainList: ScaleObjectC
     });
 }
 
-type RequestHandle = (graphql: string) => Promise<any>;
-let requestHandle: RequestHandle | null = null;
-export function registerRequest(handle: RequestHandle | null): void {
-  requestHandle = handle
-}
-
-export async function Action(actionName: string, ...scales: any[]): Promise<any[]> {
-  if (!requestHandle) {
-    console.warn('No request handle found, please call "registerRequest" firstly.');
-    return [];
+export function register(request: (graphql: string) => Promise<any>): any {
+  async function Action(actionName: string, ...scales: any[]): Promise<any[]> {
+    const scaleObjectChainList = scales.map(scale2ScaleObjectChain);
+    const [fieldStrList, matchGropIndex] = encode(scaleObjectChainList);
+    const graphqlStrList = fieldStrList.map(item => [actionName, item,].filter(Boolean).join(' '));
+    const data = await Promise.all(graphqlStrList.map(graphqlStr => request(graphqlStr)))
+    const res = extract(data, scaleObjectChainList, matchGropIndex);
+    return res;
   }
+  
+  const Query = Action.bind(null, 'query');
+  const Mutation = Action.bind(null, 'mutation');
 
-  const scaleObjectChainList = scales.map(scale2ScaleObjectChain);
-  const [fieldStrList, matchGropIndex] = encode(scaleObjectChainList);
-  const graphqlStrList = fieldStrList.map(item => [actionName, item,].filter(Boolean).join(' '));
-  const data = await Promise.all(graphqlStrList.map(graphqlStr => (requestHandle as RequestHandle)(graphqlStr)))
-  const res = extract(data, scaleObjectChainList, matchGropIndex);
-  return res;
+  return {
+    Query, Mutation, Action,
+  }
 }
-
-export const Query = Action.bind(null, 'query');
-export const Mutation = Action.bind(null, 'mutation');
