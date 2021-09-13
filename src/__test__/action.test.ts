@@ -106,15 +106,17 @@ describe('Encode correctly', () => {
 
 
 test('Extract correctly', async () => {
-  const fn = jest.fn(async () => data);
-  const { Action } = register(fn);
-
   const entity = Entity('entity', {
     f1: Scale('f1'),
     f2: Scale('f2'),
     e: Entity('e', {
       ef: Scale('ef'),
     }),
+    af: [Scale('af')],
+    ae: [Entity('ae', {
+      f: Scale('f'),
+      af: [Scale('af')],
+    })],
     me: () => entity,
   });
 
@@ -125,17 +127,27 @@ test('Extract correctly', async () => {
       e: {
         ef: 'ef',
       },
+      af: [1, 2, 3],
+      ae: [{ f: 1, af: [1, 2, 3], }, { f: 2, af: [2, 3, 4], }],
       entity: {
         f1: 'ef1',
         f2: 'ef2',
-      }
+      },
     },
   };
+
+  const fn = jest.fn(async () => data);
+  const { Action } = register(fn);
 
   expect(await Action('', entity.f1)).toEqual(['f1']);
   expect(await Action('', entity.f1, entity.f2)).toEqual(['f1', 'f2']);
   expect(await Action('', entity.f1, entity.f2, entity.e.ef)).toEqual(['f1', 'f2', 'ef']);
   expect(await Action('', entity.$('f1', 'f2'), entity.e.ef)).toEqual([{f1: 'f1', f2: 'f2'}, 'ef']);
+  expect(await Action('', entity.af)).toEqual([[1, 2, 3]]);
+  expect(await Action('', entity.ae.f)).toEqual([[1, 2]]);
+  expect(await Action('', entity.ae.af)).toEqual([[[1, 2, 3], [2, 3, 4]]]);
+  expect(await Action('', entity.ae.$('f', 'af'))).toEqual([[{ f: 1, af: [1, 2, 3], }, { f: 2, af: [2, 3, 4], }]]);
+  expect(await Action('', entity.f1, entity.ae.$('f', 'af'))).toEqual(['f1', [{ f: 1, af: [1, 2, 3], }, { f: 2, af: [2, 3, 4], }]]);
   expect(await Action('', entity.me.f1)).toEqual(['ef1']);
 
   expect(await Action('', entity({a: 1}).f1)).toEqual(['f1']);
@@ -205,4 +217,4 @@ test('Different registered handles won`t be influened by others', async () => {
   expect(res_a2).toBe(2);
   expect(res_m2).toBe(2);
   expect(res_q2).toBe(2);
-})
+});

@@ -133,17 +133,27 @@ function encode(scaleObjectChainList: ScaleObjectChain[]): [string[], number[]] 
   return [groups.map(encodeScaleObjectChainToString), matchGropIndex];
 }
 
+function extractData(fields: string | string[], data: any): any {
+  if (data instanceof Array) {
+    return data.map(item => extractData(fields, item));
+  }
+  if (fields instanceof Array) {
+    return Object.fromEntries(
+      fields.map(field => [field, data?.[field]])
+    );
+  }
+  return data?.[fields];
+}
+
 function extract(data: Record<string, any>[], scaleObjectChainList: ScaleObjectChain[], matchGroupItem: number[]) {
   return scaleObjectChainList
     .map((chain, index) => {
       const targetData = data[matchGroupItem[index]];
       return chain.reduce((pre, cur) => {
         if (cur instanceof Array) {
-          return Object.fromEntries(
-            cur.map(item => [item.name, pre?.[item.name]])
-          );
+          return extractData(cur.map(item => item.name), pre);
         }
-        return pre?.[cur.name];
+        return extractData(cur.name, pre);
       }, targetData)
     });
 }
