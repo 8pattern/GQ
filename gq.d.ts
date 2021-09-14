@@ -7,7 +7,7 @@ type ISchemaDefination = Record<string, SingleOrList<IScale | IEntity | ReturnVa
 type IScaleTypeInner = any;
 type ISchemaDefinationInner = Record<string, any>;
 
-type IArgumentValue = number | string | boolean | null | { [key: string]: IArgumentValue };
+type IArgumentValue = any;
 type IArgument = Record<string, IArgumentValue> | null;
 
 type TransferScale<T> = 
@@ -24,10 +24,12 @@ type TransferScale<T> =
     );
 
 type IScaleObject<T extends IScaleTypeInner> = {
-  '#type': 'Scale',
+  '#type': 'Scale';
 }
 
 type IScaleCollection<T extends Record<string, any>> = {
+  '#type': 'ScaleCollection';
+} & {
   [key: number]: unknown;
 }
 
@@ -40,7 +42,7 @@ type IEntityObject<S extends ISchemaDefinationInner> = {
 } & {
   [K in keyof S]: TransferScale<S[K]>
 } & {
-  '#type': 'Entity',
+  '#type': 'Entity';
 }
 
 type IEntity<S extends ISchemaDefinationInner = any, Argument extends IArgument = any> = (IEntityObject<S>) & ((argument: Argument) => IEntityObject<S>);

@@ -3,10 +3,6 @@ import { Entity, Scale } from '../factory';
 describe('Scale', () => {
   const scale = Scale('scaleName');
 
-  test('public properties are right', () => {
-    expect(scale['#type']).toBe('Scale');
-  });
-
   test('Private properties are right', () => {
     expect(scale['#'].type).toBe('Scale');
     expect(scale['#'].name).toBe('scaleName');
@@ -24,12 +20,6 @@ describe('Scale', () => {
 });
 
 describe('Entity', () => {
-  test('public properties are right', () => {
-    const defination = {};
-    const entity = Entity('entityName', defination);
-    expect(entity['#type']).toBe('Entity');
-  });
-
   test('Private properties are right', () => {
     const defination = {};
     const entity = Entity('entityName', defination);
@@ -167,6 +157,8 @@ describe('Entity', () => {
         f2: [scale],
       }) as any;
 
+      expect(entity.$('f1', 'f2')['#'].type).toEqual('ScaleCollection');
+
       expect(entity.$('f1', 'f2')[0]['#'].name).toEqual('scale');
       expect(entity.$('f1', 'f2')[1]['#'].name).toEqual('scale');
       expect(entity({}).$('f1', 'f2')[0]['#'].name).toEqual('scale');
@@ -181,4 +173,42 @@ describe('Entity', () => {
       })
     ).toThrowError()
   });
+});
+
+test('Public properties are correct', () => {
+  const entity = Entity('entityName', {
+    f: Scale('f'),
+    af: [Scale('af')],
+    e: Entity('e', {
+      f: Scale('f'),
+      af: [Scale('af')],
+    }),
+    ae: [Entity('ae', {
+      f: Scale('f'),
+      af: [Scale('af')],
+    })],
+    m: () => entity,
+    am: [() => entity],
+  });
+
+  expect(entity.f['#type']).toBe('Scale');
+  expect(entity.af['#type']).toBe('Scale');
+  expect(entity.e.f['#type']).toBe('Scale');
+  expect(entity.e.af['#type']).toBe('Scale');
+  expect(entity.ae.f['#type']).toBe('Scale');
+  expect(entity.ae.af['#type']).toBe('Scale');
+  expect(entity.m.f['#type']).toBe('Scale');
+  expect(entity.m.af['#type']).toBe('Scale');
+
+  expect(entity['#type']).toBe('Entity');
+  expect(entity.e['#type']).toBe('Entity');
+  expect(entity.ae['#type']).toBe('Entity');
+  expect(entity.m['#type']).toBe('Entity');
+  expect(entity.am['#type']).toBe('Entity');
+
+  expect(entity.$('f', 'af')['#type']).toBe('ScaleCollection');
+  expect(entity.e.$('f', 'af')['#type']).toBe('ScaleCollection');
+  expect(entity.ae.$('f', 'af')['#type']).toBe('ScaleCollection');
+  expect(entity.m.$('f', 'af')['#type']).toBe('ScaleCollection');
+  expect(entity.am.$('f', 'af')['#type']).toBe('ScaleCollection');
 });
