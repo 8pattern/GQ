@@ -49,6 +49,16 @@ describe('Encode correctly', () => {
     expect(fn).toHaveBeenLastCalledWith('{entity{entity{f(a:"1"),entity(b:2){f}}}}');
   });
 
+  test('Arguments can be transfered', async () => {
+    const fn = jest.fn();
+    const { Action } = register(fn);
+    const entity = Entity('entity', {
+      f: Scale('f'),
+    });
+    await Action('', entity.f({a: 1, b: '2', c: [1,2], d: { m: 1, n: '2', }}));
+    expect(fn).toHaveBeenLastCalledWith('{entity{f(a:1,b:"2",c:[1,2],d:{m:1,n:"2"})}}');
+  });
+
   test('Entity definations can be composed', async () => {
     const fn = jest.fn();
     const { Action } = register(fn);
@@ -110,7 +120,6 @@ describe('Encode correctly', () => {
     expect(fn).toHaveBeenNthCalledWith(11, '{entity{entity{f,f2}}}');
   });
 });
-
 
 describe('Extract correctly', () => {
   test('Basic', async() => {
