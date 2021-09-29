@@ -5,7 +5,7 @@ function parseArgument(argument: Entity['argument']) {
   const parseValue: (v: any) => string = (v: any) => {
     if (v instanceof Array) return JSON.stringify(v);
     if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${k}:${parseValue(v)}`).join(',')}}`;
-    if (v instanceof String) return `\"${v}\"`;
+    if (v instanceof String) return `"${v}"`;
     return JSON.stringify(v);
   };
   return `(${

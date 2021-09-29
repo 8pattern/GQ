@@ -208,6 +208,24 @@ describe('Extract correctly', () => {
     expect(await Action('', entity.me.f1)).toEqual(['ef1']);
     expect(await Action('', entity.$('f1', 'f2'), entity.me.$('f1'))).toEqual([{ f1: 'f1', f2: 'f2' }, { f1: 'ef1' }]);
   });
+
+  test('If corresponding field, return null', async () => {
+    const entity = Entity('entity', {
+      f1: Scale('f1'),
+      f2: Scale('f2'),
+      e: Entity('e', {
+        f: Scale('f'),
+      }),
+    });
+  
+    const fn = jest.fn(async () => null);
+    const { Action } = register(fn);
+
+    expect(await Action('', entity.f1)).toEqual([null]);
+    expect(await Action('', entity.f1, entity.f2)).toEqual([null, null]);
+    expect(await Action('', entity.$('f1', 'f2'))).toEqual([null]);
+    expect(await Action('', entity.e.f)).toEqual([null]);
+  });
 });
 
 describe('Custom actions', () => {

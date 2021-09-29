@@ -134,6 +134,7 @@ function encode(scaleObjectChainList: ScaleObjectChain[]): [string[], number[]] 
 }
 
 function extractData(fields: string | string[], data: any): any {
+  if (data === null || data === undefined) return null;
   if (data instanceof Array) {
     return data.map(item => extractData(fields, item));
   }
@@ -142,13 +143,13 @@ function extractData(fields: string | string[], data: any): any {
       fields.map(field => [field, data?.[field]])
     );
   }
-  return data?.[fields];
+  return data?.[fields] ?? null;
 }
 
 function extract(data: Record<string, any>[], scaleObjectChainList: ScaleObjectChain[], matchGroupItem: number[]) {
   return scaleObjectChainList
     .map((chain, index) => {
-      const targetData = data[matchGroupItem[index]];
+      const targetData = data?.[matchGroupItem[index]];
       return chain.reduce((pre, cur) => {
         if (cur instanceof Array) {
           return extractData(cur.map(item => item.name), pre);
