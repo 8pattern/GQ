@@ -42,4 +42,5 @@ test('With argument', () => {
   expect(parse({ ...baseScale, argument: { c1: 1, c2: '2', c3: true, c4: null, c5: { o: {} } } })).toBe('f(c1:1,c2:"2",c3:true,c4:null,c5:{o:{}})');
   expect(parse({ ...baseSchema, argument: { c1: 1, c2: '2', c3: true, c4: null, c5: { o: {} } } })).toBe('s(c1:1,c2:"2",c3:true,c4:null,c5:{o:{}}){}');
   expect(parse({ ...baseSchema, argument: { c: { m: { x: 1, y: '2'}, n: [1, 2] } } })).toBe('s(c:{m:{x:1,y:"2"},n:[1,2]}){}');
+  expect(parse({ ...baseSchema, argument: { c: [{ x: 1, y: '2', }] } })).toBe('s(c:[{x:1,y:"2"}]){}');
 });

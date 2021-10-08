@@ -57,6 +57,8 @@ describe('Encode correctly', () => {
     });
     await Action('', entity.f({a: 1, b: '2', c: [1,2], d: { m: 1, n: '2', }}));
     expect(fn).toHaveBeenLastCalledWith('{entity{f(a:1,b:"2",c:[1,2],d:{m:1,n:"2"})}}');
+    await Action('', entity.f({a: { m: 1, n: '2', }, b: [{ m: 1, n: 2, }] }));
+    expect(fn).toHaveBeenLastCalledWith('{entity{f(a:{m:1,n:"2"},b:[{m:1,n:2}])}}');
   });
 
   test('Entity definations can be composed', async () => {

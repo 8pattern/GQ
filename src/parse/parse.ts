@@ -3,7 +3,7 @@ import { Entity, Scale, } from './dataType';
 function parseArgument(argument: Entity['argument']) {
   if (!argument) return '';
   const parseValue: (v: any) => string = (v: any) => {
-    if (v instanceof Array) return JSON.stringify(v);
+    if (v instanceof Array) return `[${v.map(parseValue).join(',')}]`;
     if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${k}:${parseValue(v)}`).join(',')}}`;
     if (v instanceof String) return `"${v}"`;
     return JSON.stringify(v);

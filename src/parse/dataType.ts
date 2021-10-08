@@ -7,7 +7,7 @@ export interface Scale extends Base {
   argument: Record<string, ArgumentValue> | null;
 }
 
-type ArgumentValue = number | string | boolean | null | (number | string | boolean | null)[] | { [key: string]: ArgumentValue };
+type ArgumentValue = any;
 
 export interface Entity extends Base {
   type: 'Entity';
