@@ -1,6 +1,6 @@
 {
   "name": "@8pattern/gq",
-  "version": "0.0.3-fix2",
+  "version": "0.0.3-fix3",
   "description": "A GraphQL client for TypeScript",
   "scripts": {
     "dev": "rollup -c -w --environment NODE_ENV:development",
