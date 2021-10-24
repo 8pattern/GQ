@@ -164,15 +164,16 @@ export function register(request: (graphql: string) => Promise<any>): any {
     const scaleObjectChainList = scales.map(scale2ScaleObjectChain);
     const [fieldStrList, matchGropIndex] = encode(scaleObjectChainList);
     const graphqlStrList = fieldStrList.map(item => [actionName, item,].filter(Boolean).join(' '));
-    const data = await Promise.all(graphqlStrList.map(graphqlStr => request(graphqlStr)))
+    const data = await Promise.all(graphqlStrList.map(graphqlStr => request(graphqlStr)));
     const res = extract(data, scaleObjectChainList, matchGropIndex);
     return res;
   }
   
   const Query = Action.bind(null, 'query');
   const Mutation = Action.bind(null, 'mutation');
+  const Excute = request;
 
   return {
-    Query, Mutation, Action,
+    Query, Mutation, Action, Excute,
   }
 }

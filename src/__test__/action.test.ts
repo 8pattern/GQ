@@ -288,3 +288,14 @@ test('Different registered handles won`t be influened by others', async () => {
   expect(res_m2).toBe(2);
   expect(res_q2).toBe(2);
 });
+
+test('Allow to excute a graphql string directly', async () => {
+  const queryStr = 'query { a, b }';
+  const result = {a: 1, b: '2'};
+  const f = jest.fn(async () => result);
+  const { Excute } = register(f);
+
+  expect(Excute).toBe(f);
+  expect(await Excute(queryStr)).toBe(result);
+  expect(f).toHaveBeenLastCalledWith(queryStr);
+});
