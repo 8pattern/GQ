@@ -1,5 +1,5 @@
 type SingleOrList<T> = T | T[];
-type ReturnValueFunction<R> = () => R 
+type ReturnValueFunction<R> = () => R;
 
 type IScaleType = SingleOrList<number | string | boolean | null | { [key: string]: IScaleType }>;
 type ISchemaDefination = Record<string, SingleOrList<IScale | IEntity | ReturnValueFunction<IEntity>>>;
@@ -51,20 +51,3 @@ type IScale<T extends IScaleTypeInner = any, Argument extends IArgument = any> =
 
 export function Entity<Argument extends IArgument = any, S extends ISchemaDefination = ISchemaDefination>(name: string, schema: S): IEntity<S, Argument>;
 export function Scale<Argument extends IArgument = any, T extends IScaleType = any>(name: string): IScale<T, Argument>;
-
-type ExactResult<T extends ValidActionTarget[]> = {
-  [K in keyof T]:
-    T[K] extends IScale<infer F> ? F :
-    T[K] extends IScaleCollection<infer C> ? { [CK in keyof C]: C[CK] extends IScale<infer F> ? F : unknown } :
-    T[K] extends IScaleObject<infer F> ? F :
-    unknown;
-}
-
-type ValidActionTarget = IScale | IScaleCollection<any> | IScaleObject<any>;
-
-export function register(request: (graphql: string) => Promise<any>): {
-  Query: <F extends ValidActionTarget[]>(...scales: F) => ExactResult<F>,
-  Mutation: <F extends ValidActionTarget[]>(...scales: F) => ExactResult<F>,
-  Action: <F extends ValidActionTarget[]>(actionName: string, ...scales: F) => ExactResult<F>,
-  Excute: <T = any>(graphql: string) => T,
-}

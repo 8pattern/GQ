@@ -14,7 +14,7 @@
     "GraphQL"
   ],
   "main": "dist/GQ.js",
-  "types": "gq.d.ts",
+  "types": "src/types",
   "devDependencies": {
     "@babel/preset-typescript": "^7.6.0",
     "@rollup/plugin-babel": "^5.3.0",
