@@ -12,7 +12,7 @@ describe('Encode correctly', () => {
     expect(fn).toHaveBeenLastCalledWith('{scale(a:1,b:"2")}');
   });
 
-  test('Scale in entity can be transfer to graphql string', async () => {
+  describe('Scale in entity can be transfer to graphql string', () => {
     const fn = jest.fn();
     const { Action } = register(fn);
     const entity = Entity('entity', {
@@ -28,25 +28,45 @@ describe('Encode correctly', () => {
       })],
       me: () => entity,
     });
-    await Action('', entity.f);
-    expect(fn).toHaveBeenLastCalledWith('{entity{f}}');
-    await Action('', entity.$('f', 'f2'));
-    expect(fn).toHaveBeenLastCalledWith('{entity{f,f2}}');
-    await Action('', entity.f, entity.e);
-    expect(fn).toHaveBeenLastCalledWith('{entity{f,e{}}}');
-    await Action('', entity.f, entity.e.ef);
-    expect(fn).toHaveBeenLastCalledWith('{entity{f,e{ef}}}');
-    await Action('', entity.af, entity.ae.f, entity.ae.af);
-    expect(fn).toHaveBeenLastCalledWith('{entity{af,ae{f,af}}}');
-    await Action('', entity.me.f, entity.me.me.f);
-    expect(fn).toHaveBeenLastCalledWith('{entity{entity{f,entity{f}}}}');
 
-    await Action('', entity({a: 1}).$('f', 'f2'));
-    expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,f2}}');
-    await Action('', entity({a: 1}).$('f', 'f2'));
-    expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,f2}}');
-    await Action('', entity.me.f({a: '1'}), entity.me.me({b: 2}).f);
-    expect(fn).toHaveBeenLastCalledWith('{entity{entity{f(a:"1"),entity(b:2){f}}}}');
+    test('Basic', async () => {
+      await Action('', entity.f);
+      expect(fn).toHaveBeenLastCalledWith('{entity{f}}');
+      await Action('', entity.$('f', 'f2'));
+      expect(fn).toHaveBeenLastCalledWith('{entity{f,f2}}');
+      await Action('', entity.f, entity.e);
+      expect(fn).toHaveBeenLastCalledWith('{entity{f,e{}}}');
+      await Action('', entity.f, entity.e.ef);
+      expect(fn).toHaveBeenLastCalledWith('{entity{f,e{ef}}}');
+      await Action('', entity.af, entity.ae.f, entity.ae.af);
+      expect(fn).toHaveBeenLastCalledWith('{entity{af,ae{f,af}}}');
+      await Action('', entity.me.f, entity.me.me.f);
+      expect(fn).toHaveBeenLastCalledWith('{entity{entity{f,entity{f}}}}');
+    });
+
+    test('With arguments', async () => {
+      await Action('', entity({a: 1}).$('f', 'f2'));
+      expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,f2}}');
+      await Action('', entity({a: 1}).$('f', 'f2'));
+      expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,f2}}');
+      await Action('', entity.me.f({a: '1'}), entity.me.me({b: 2}).f);
+      expect(fn).toHaveBeenLastCalledWith('{entity{entity{f(a:"1"),entity(b:2){f}}}}');
+    });
+
+    test('Sub query', async () => {
+      await Action('', entity.$('f', (e: typeof entity) => e.e.ef, (e: typeof entity) => e.ae.$('f', 'af')));
+      expect(fn).toHaveBeenLastCalledWith('{entity{f,e{ef},ae{f,af}}}');
+      await Action('', entity.$('f', (e: typeof entity) => e.e({a: 1}).ef));
+      expect(fn).toHaveBeenLastCalledWith('{entity{f,e(a:1){ef}}}');
+      await Action('', entity.$('f', (e: typeof entity) => e.ae.$((ae: any) => ae.$('f', 'af'))));
+      expect(fn).toHaveBeenLastCalledWith('{entity{f,ae{f,af}}}');
+      await Action('', entity({a: 1}).$('f', (e: typeof entity) => e.e.ef, (e: typeof entity) => e.ae.$('f', 'af')));
+      expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,e{ef},ae{f,af}}}');
+      await Action('', entity({a: 1}).$('f', (e: typeof entity) => e.e.ef));
+      expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,e{ef}}}');
+      await Action('', entity({a: 1}).$('f', (e: typeof entity) => e.e({c: 3}).ef));
+      expect(fn).toHaveBeenLastCalledWith('{entity(a:1){f,e(c:3){ef}}}');
+    });
   });
 
   test('Arguments can be transfered', async () => {
@@ -114,7 +134,6 @@ describe('Encode correctly', () => {
     await Action('', entity.f, entity({a: 1}).$('f', 'f2'), entity.f2);
     expect(fn).toHaveBeenNthCalledWith(7, '{entity{f,f2}}');
     expect(fn).toHaveBeenNthCalledWith(8, '{entity(a:1){f,f2}}');
-
 
     await Action('', entity.me({a:1}).f, entity.me({b: 2}).me.f, entity.me.$('f', 'f2'));
     expect(fn).toHaveBeenNthCalledWith(9, '{entity{entity(a:1){f}}}');
@@ -209,6 +228,32 @@ describe('Extract correctly', () => {
 
     expect(await Action('', entity.me.f1)).toEqual(['ef1']);
     expect(await Action('', entity.$('f1', 'f2'), entity.me.$('f1'))).toEqual([{ f1: 'f1', f2: 'f2' }, { f1: 'ef1' }]);
+  });
+
+  test('Embed field', async () => {
+    const entity = Entity('entity', {
+      f: Scale('f'),
+      e: Entity('e', {
+        f1: Scale('f1'),
+        f2: Scale('f2'),
+      }),
+    });
+  
+    const data = {
+      entity: {
+        f: 'f',
+        e: {
+          f1: 'f1',
+          f2: 'f2',
+        },
+      },
+    };
+  
+    const fn = jest.fn(async () => data);
+    const { Action } = register(fn);
+
+    expect(await Action('', entity.$('f', (e: any) => e.e.$('f1', 'f2')))).toEqual([{f: 'f', e: {f1: 'f1', f2: 'f2'}}]);
+    expect(await Action('', entity.$('f', (e: any) => e.e.$((ee: any) => ee.f2)))).toEqual([{f: 'f', e: {f2: 'f2'}}]);
   });
 
   test('If corresponding field, return null', async () => {

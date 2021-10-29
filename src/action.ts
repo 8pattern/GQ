@@ -1,82 +1,101 @@
-import { Scale, } from './factory';
+import { FieldType, } from './factory';
 import { parse, } from './parse';
+
+type IScale = any;
+type IScaleCollection = IScale[];
+type Request = (graphql: string) => Promise<any>;
+
+enum ExtractMode {
+  ignore, scalar, collection,
+}
 
 interface ScaleObject {
   type: string;
   name: string;
   argument: string;
+  from: number;
+  mode?: ExtractMode;
 }
 
 enum ScaleMatchStatus {
   different, conflict, same,
 }
 
-type ScaleObjectCollection = ScaleObject[]
-type ScaleObjectChain = [...ScaleObject[], ScaleObject | ScaleObjectCollection];
+type ScaleObjectTree = (ScaleObject | ScaleObjectTree[])[];
+type ScaleObjectChain = ScaleObject[];
 
-function scale2ScaleObject(scale: typeof Scale): ScaleObject {
-  const { type, name, argument, } = scale['#'];
-  return { type, name, argument, };
+type QueryObject = {
+  str?: string;
+  source: ScaleObjectChain[];
+  data?: any;
 }
 
-function scale2ScaleObjectChain(scale: any): ScaleObjectChain {
-  const linkList: any[] = [];
-  let current = scale;
-  if (current instanceof Array) {
-    linkList.push(current.map(scale2ScaleObject));
-    current = current[0]['#link'];
-  }
-  while (current) {
-    linkList.push(scale2ScaleObject(current));
+function getScaleObject(scale: any, from: number, mode: ExtractMode) {
+  const { type, name, argument, } = scale['#'];
+  return { type, name, argument, from, mode, };
+}
+
+function scale2Tree(scale: IScale | IScaleCollection, from: number, mode: ExtractMode | null = null, endCondition: ((scale: any) => boolean) | null = null): ScaleObjectTree {
+  let linkList: ScaleObjectTree = [];
+  let current = scale['#link'];
+  while (current && (!endCondition || !endCondition(current))) {
+    linkList.push(getScaleObject(current, from, mode ?? ExtractMode.ignore, ));
     current = current['#link'];
   }
-  return linkList.reverse() as ScaleObjectChain;
+  linkList = linkList.reverse();
+  if (scale['#type'] === FieldType.ScaleCollection) {
+    const currentTree = (scale as IScaleCollection).map(item => scale2Tree(item, from, mode ?? ExtractMode.collection, (target) => target?.['#link'] === scale['#link']?.['#link']));
+    linkList.push(currentTree as ScaleObjectTree[]);
+  } else {
+    linkList.push(getScaleObject(scale, from, mode ?? ExtractMode.scalar));
+  }
+  return linkList;
 }
 
-function checkScaleMatchStatus(obj: ScaleObject | ScaleObjectCollection, target: ScaleObject | ScaleObjectCollection | undefined): ScaleMatchStatus {
-  if (!target) return ScaleMatchStatus.different;
-  if (obj instanceof Array) {
-    if (target instanceof Array) {
-      for(const oItem of obj) {
-        for(const tItem of target) {
-          const status = checkScaleMatchStatus(oItem, tItem);
-          if ([ScaleMatchStatus.different, ScaleMatchStatus.conflict].includes(status)) return ScaleMatchStatus.conflict;
-        }
-      }
-      return ScaleMatchStatus.same;
-    }
-    return obj.some(oItem => [ScaleMatchStatus.conflict, ScaleMatchStatus.same].includes(checkScaleMatchStatus(oItem, target))) ? ScaleMatchStatus.conflict : ScaleMatchStatus.different;
-  }
-  if (target instanceof Array) {
-    return target.some(tItem => [ScaleMatchStatus.conflict, ScaleMatchStatus.same].includes(checkScaleMatchStatus(obj, tItem))) ? ScaleMatchStatus.conflict : ScaleMatchStatus.different;
-  }
+function scaleList2Trees(scales: (IScale | IScaleCollection)[]): ScaleObjectTree[] {
+  const res = scales.map((item, index) => scale2Tree(item, index, null));
+  return res;
+}
 
-  if (obj?.name !== target?.name) return ScaleMatchStatus.different;
-  if (obj?.type !== target?.type || JSON.stringify(obj?.argument) !== JSON.stringify(target?.argument)) return ScaleMatchStatus.conflict;
+function tree2ChainList(tree: ScaleObjectTree): ScaleObjectChain[] {
+  const chainList: ScaleObjectChain[] = [];
+  const parent = tree.slice(0, -1) as ScaleObjectChain;
+  const last = tree.slice(-1)[0] as ScaleObject | ScaleObjectTree[];
+  if (last instanceof Array) {
+    const subChainList = (last as ScaleObjectTree[]).flatMap(tree2ChainList);
+    subChainList.forEach(item => {
+      chainList.push([...parent, ...item]);
+    })
+  } else {
+    chainList.push([...parent, last]);
+  }
+  return chainList;
+}
+
+function checkScaleMatchStatus(obj: ScaleObject, target: ScaleObject | undefined): ScaleMatchStatus {
+  if (!target) return ScaleMatchStatus.different;
+  if (obj.name !== target.name) return ScaleMatchStatus.different;
+  if (obj.type !== target.type || JSON.stringify(obj.argument) !== JSON.stringify(target.argument)) return ScaleMatchStatus.conflict;
   return ScaleMatchStatus.same;
 }
 
-function haveConflictObject(scaleObjectChain: ScaleObjectChain, group: ScaleObjectChain[]) {
-  return group.some(targetChain => {
-    for(let i=0; i < scaleObjectChain.length; i++) {
-      const obj = scaleObjectChain[i];
-      const target = targetChain?.[i];
-      const status = checkScaleMatchStatus(obj, target);
-      if (status === ScaleMatchStatus.conflict) return true;
-      if (status === ScaleMatchStatus.different) return false;
-    }
-    return false;
-  })
+function haveConflictObject(current: ScaleObjectChain, target: ScaleObjectChain) {
+  for(let i=0; i < current.length; i++) {
+    const status = checkScaleMatchStatus(current[i], target?.[i]);
+    if (status === ScaleMatchStatus.conflict) return true;
+    if (status === ScaleMatchStatus.different) return false;
+  }
+  return false;
 }
 
-function encodeScaleObjectChainToString(chainGroup: ScaleObjectChain[]) {
+function encode(chains: ScaleObjectChain[], action: string): string {
   const parseBody = {
     type: 'Entity',
     name: '',
     argument: null,
     children: [],
   }
-  chainGroup.forEach(chain => {
+  chains.forEach(chain => {
     let current: any = parseBody;
     chain.forEach((item) => {
       if (!(item instanceof Array)) {
@@ -108,64 +127,133 @@ function encodeScaleObjectChainToString(chainGroup: ScaleObjectChain[]) {
       }
     });
   });
-  return parse(parseBody as any);
+  const queryStr = parse(parseBody as any);
+  return [action, queryStr,].filter(Boolean).join(' ');
 }
 
-function encode(scaleObjectChainList: ScaleObjectChain[]): [string[], number[]] {
-  const groups: ScaleObjectChain[][] = [];
-  const matchGropIndex: number[] = []
-  scaleObjectChainList.forEach(chain => {
-    let targetGroupIndex = -1;
-    groups.some((group, index) => {
-      if (targetGroupIndex < 0 && !haveConflictObject(chain, group)) {
-        group.push(chain);
-        targetGroupIndex = index;
-        return true;
+function chainList2QueryObjectList(chains: ScaleObjectChain[], action: string): QueryObject[] {
+  const groups: QueryObject[] = [];
+  chains.forEach(chain => {
+    let isMatched = false;
+    for (const group of groups) {
+      const isConflict = group.source.some(item => haveConflictObject(chain, item));
+      if (!isConflict) {
+        isMatched = true;
+        group.source.push(chain);
+        break;
       }
-      return false;
-    });
-    if (targetGroupIndex < 0) {
-      groups.push([chain]);
-      targetGroupIndex = groups.length - 1;
     }
-    matchGropIndex.push(targetGroupIndex);
+    if (!isMatched) {
+      groups.push({
+        source: [ chain, ],
+      })
+    }
   });
-  return [groups.map(encodeScaleObjectChainToString), matchGropIndex];
+  return groups.map(item => ({
+    str: encode(item.source, action),
+    source: item.source,
+  }));
 }
 
-function extractData(fields: string | string[], data: any): any {
-  if (data === null || data === undefined) return null;
-  if (data instanceof Array) {
-    return data.map(item => extractData(fields, item));
-  }
-  if (fields instanceof Array) {
-    return Object.fromEntries(
-      fields.map(field => [field, data?.[field]])
-    );
-  }
-  return data?.[fields] ?? null;
-}
-
-function extract(data: Record<string, any>[], scaleObjectChainList: ScaleObjectChain[], matchGroupItem: number[]) {
-  return scaleObjectChainList
-    .map((chain, index) => {
-      const targetData = data?.[matchGroupItem[index]];
-      return chain.reduce((pre, cur) => {
-        if (cur instanceof Array) {
-          return extractData(cur.map(item => item.name), pre);
+async function fillData(queryObjects: QueryObject[], request: Request): Promise<QueryObject[]> {
+  return Promise.all(
+    queryObjects.map(item => (
+      new Promise<QueryObject>(resolve => {
+        if (item.str) {
+          const handle = request(item.str);
+          if (typeof handle?.then === 'function') {
+            handle.then(data => resolve({ ...item, data }));
+          } else {
+            resolve({ ...item, data: handle })
+          }
+        } else {
+          resolve({ ...item, data: null })
         }
-        return extractData(cur.name, pre);
-      }, targetData)
-    });
+      })
+    ))
+  );
 }
 
-export function register(request: (graphql: string) => Promise<any>): any {
-  async function Action(actionName: string, ...scales: any[]): Promise<any[]> {
-    const scaleObjectChainList = scales.map(scale2ScaleObjectChain);
-    const [fieldStrList, matchGropIndex] = encode(scaleObjectChainList);
-    const graphqlStrList = fieldStrList.map(item => [actionName, item,].filter(Boolean).join(' '));
-    const data = await Promise.all(graphqlStrList.map(graphqlStr => request(graphqlStr)));
-    const res = extract(data, scaleObjectChainList, matchGropIndex);
+function extractData(data: any, fields: string[], returnObj: boolean): any {
+  if (fields.length < 1) return data;
+  const [field, ...rest] = fields;
+  if (data instanceof Array) {
+    return data.map(item => extractData(item, fields, returnObj))
+  }
+  if (rest.length > 0) {
+    if (data && field in data) {
+      const res = extractData(data[field], rest, returnObj);
+      return returnObj ? { [field]: res } : res;
+    } 
+  }
+  if (data && field in data) {
+    const res = data[field] ?? null;
+    return returnObj ? { [field]: res } : res;
+  }
+  return null;
+}
+
+function mergeResult(results: any[]): any {
+  return results.reduce((pre, cur) => {
+    if (cur === undefined) return pre;
+    if (pre === undefined) return cur;
+    if (pre instanceof Object && cur instanceof Object) {
+      Object.entries(cur).forEach(([key, value]) => {
+        if (key in pre) {
+          pre[key] = mergeResult([pre[key], value]);
+        } else {
+          pre[key] = value;
+        }
+      })
+      return pre;
+    }
+    throw new Error(`(GQ) Extract Error: ${JSON.stringify(pre)} and ${JSON.stringify(cur)} can't be merged.`);
+  }, undefined);
+}
+
+function extract(queryObjectList: QueryObject[]): any[] {
+  const resultCollection: any[][] = [];
+  for (const queryObject of queryObjectList) {
+    queryObject.source.forEach(chain => {
+      const resultNo = chain.slice(-1)[0].from;
+      const fieldMode = chain.slice(-1)[0].mode;
+      resultCollection[resultNo] = resultCollection[resultNo] ?? [];
+      if (fieldMode === ExtractMode.scalar) {
+        const res = extractData(queryObject.data, chain.map(item => item.name), false);
+        resultCollection[resultNo].push(res);
+      } else if (fieldMode === ExtractMode.collection) {
+        const startFieldIndex = chain.findIndex(item => item.mode === ExtractMode.collection);
+        const ignoreFields = chain.slice(0, startFieldIndex).map(item => item.name);
+        const res = extractData(
+          extractData(queryObject.data, ignoreFields, false),
+          chain.slice(startFieldIndex).map(item => item.name),
+          true,
+        )
+        resultCollection[resultNo].push(res);
+      }
+    });
+  }
+  const result = resultCollection.map(item => {
+    if (item.length === 0) return null; 
+    if (item.length === 1) return item[0];
+    if (item.every(iitem => iitem === null)) return null;
+    if (item.some(iitem => iitem instanceof Array)) {
+      const maxLen = Math.max(...item.map(iitem => iitem.length));
+      if (maxLen < 1) return null;
+      return Array(maxLen).fill('').map((_, index) => mergeResult(item.map(iitem => iitem[index])))
+    }
+    return mergeResult(item);
+  });
+  return result;
+}
+
+export function register(request: Request): any {
+  async function Action(actionName: string, ...scales: (IScale | IScaleCollection)[]): Promise<any[]> {
+    const trees = scaleList2Trees(scales);
+    const chainList = trees.flatMap(tree2ChainList);
+    const queryObjectList = chainList2QueryObjectList(chainList, actionName);
+    const queryObjectListWithData = await fillData(queryObjectList, request);
+    const res = extract(queryObjectListWithData);
     return res;
   }
   

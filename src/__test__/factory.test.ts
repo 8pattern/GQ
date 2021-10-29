@@ -158,11 +158,26 @@ describe('Entity', () => {
       }) as any;
 
       expect(entity.$('f1', 'f2')['#'].type).toEqual('ScaleCollection');
-
       expect(entity.$('f1', 'f2')[0]['#'].name).toEqual('scale');
       expect(entity.$('f1', 'f2')[1]['#'].name).toEqual('scale');
       expect(entity({}).$('f1', 'f2')[0]['#'].name).toEqual('scale');
       expect(entity({}).$('f1', 'f2')[1]['#'].name).toEqual('scale');
+    });
+
+    test('`$` can also receive a function to get the current entity object', () => {
+      const entity = Entity('', {
+        f: Scale('f'),
+        e: Entity('e', {
+          f: Scale('ef'),
+        }),
+      }) as any;
+
+      expect(entity.$('f', (e: typeof entity) => e.e.f)['#'].type).toEqual('ScaleCollection');
+      expect(entity.$('f', (e: typeof entity) => e.e.f)[0]['#'].name).toEqual('f');
+      expect(entity.$('f', (e: typeof entity) => e.e.f)[1]['#'].name).toEqual('ef');
+      expect(entity({}).$((e: typeof entity) => e.e.f)[0]['#'].name).toEqual('ef');
+      expect(entity({}).$((e: typeof entity) => e.e({}).f)[0]['#'].name).toEqual('ef');
+      expect(entity({}).e.$((e: typeof entity) => e.f)[0]['#'].name).toEqual('ef');
     });
   });
 

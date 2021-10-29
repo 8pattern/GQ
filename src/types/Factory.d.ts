@@ -34,7 +34,7 @@ type IScaleCollection<T extends Record<string, any>> = {
 }
 
 type ScaleKey<T extends ISchemaDefination> = {
-  [K in keyof T]: T[K] extends SingleOrList<IEntity> ? never : ( T[K] extends SingleOrList<IScale> ? K : never);
+  [K in keyof T]: T[K] extends SingleOrList<IScale> ? K : never;
 }[keyof T];
 
 type IEntityObject<S extends ISchemaDefinationInner> = {

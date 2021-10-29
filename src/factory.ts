@@ -39,12 +39,13 @@ function ScaleFactory(name: string, parent: any = null) {
   return obj;
 }
 
-function ScaleCollectionFactory(scales: any[]) {
+function ScaleCollectionFactory(scales: any[], parent: any) {
   const type = FieldType.ScaleCollection;
   return new Proxy(scales, {
     get: (target, p: string) => {
       if (p === '#') return { type, };
       if (p === '#type') return type;
+      if (p === '#link') return parent;
       return target[p];
     }
   })
@@ -77,7 +78,7 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
       get: (_, p: string) => {
         if (p === '#') return { ...metaData, argument, };
         if (p === '#link') return parent;
-        if (p === '$') return (...fields: string[]) => ScaleCollectionFactory(fields.map(item => obj[item]))
+        if (p === '$') return (...fields: (string | ((entity: any) => any))[]) => ScaleCollectionFactory(fields.map(item => typeof item == 'string' ? obj[item] : item(obj)), obj)
         if (p in mDefination) {
           let target = mDefination[p];
           if (![FieldType.Entity, FieldType.Scale].includes(target?.['#']?.type) && target instanceof Function) {
@@ -107,7 +108,7 @@ function EntityFactory(name: string, defination: SchemaDefination, parent: any =
       if (p === '#type') return FieldType.Entity;
       if (p === '#') return { ...metaData, };
       if (p === '#link') return parent;
-      if (p === '$') return (...fields: string[]) => ScaleCollectionFactory(fields.map(item => _this[item]));
+      if (p === '$') return (...fields: (string | ((entity: any) => any))[]) => ScaleCollectionFactory(fields.map(item => typeof item == 'string' ? _this[item] : item(entity(null))), _this);
       if (p in mDefination) {
         let target = mDefination[p];
         if (![FieldType.Entity, FieldType.Scale].includes(target?.['#']?.type) && target instanceof Function) {
