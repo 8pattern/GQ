@@ -344,3 +344,40 @@ test('Allow to excute a graphql string directly', async () => {
   expect(await Excute(queryStr)).toBe(result);
   expect(f).toHaveBeenLastCalledWith(queryStr);
 });
+
+describe('Throw error', () => {
+  test('Register an ASYNC method', async () => {
+    const errMsg = 'Demo Error';
+    const scale = Scale('scale');
+    const f = jest.fn(async () => {
+      throw new Error(errMsg);
+    });
+    const { Action, Query, Mutation, Excute } = register(f);
+  
+    // eslint-disable-next-line jest/valid-expect
+    expect(Action('', scale)).rejects.toThrowError(errMsg);
+    // eslint-disable-next-line jest/valid-expect
+    expect(Query(scale)).rejects.toThrowError(errMsg);
+    // eslint-disable-next-line jest/valid-expect
+    expect(Mutation(scale)).rejects.toThrowError(errMsg);
+    // eslint-disable-next-line jest/valid-expect
+    expect(Excute('')).rejects.toThrowError(errMsg);
+  });
+  
+  test('Register a SYNC method', () => {
+    const errMsg = 'Demo Error';
+    const scale = Scale('scale');
+    const f = jest.fn(() => {
+      throw new Error(errMsg);
+    });
+    const { Action, Query, Mutation, Excute } = register(f);
+  
+    // eslint-disable-next-line jest/valid-expect
+    expect(Action('', scale)).rejects.toThrowError(errMsg);
+    // eslint-disable-next-line jest/valid-expect
+    expect(Query(scale)).rejects.toThrowError(errMsg);
+    // eslint-disable-next-line jest/valid-expect
+    expect(Mutation(scale)).rejects.toThrowError(errMsg);
+    expect(() => Excute('')).toThrowError(errMsg);
+  });
+});

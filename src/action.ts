@@ -158,16 +158,22 @@ function chainList2QueryObjectList(chains: ScaleObjectChain[], action: string): 
 async function fillData(queryObjects: QueryObject[], request: Request): Promise<QueryObject[]> {
   return Promise.all(
     queryObjects.map(item => (
-      new Promise<QueryObject>(resolve => {
-        if (item.str) {
-          const handle = request(item.str);
-          if (typeof handle?.then === 'function') {
-            handle.then(data => resolve({ ...item, data }));
+      new Promise<QueryObject>((resolve, reject) => {
+        try {
+          if (item.str) {
+            const handle = request(item.str);
+            if (handle instanceof Promise) {
+              handle
+                .then(data => resolve({ ...item, data }))
+                .catch(reject);
+            } else {
+              resolve({ ...item, data: handle })
+            }
           } else {
-            resolve({ ...item, data: handle })
+            resolve({ ...item, data: null })
           }
-        } else {
-          resolve({ ...item, data: null })
+        } catch (err) {
+          reject(err);
         }
       })
     ))

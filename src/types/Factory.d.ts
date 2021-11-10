@@ -23,10 +23,12 @@ type TransferScale<T> =
       T
     );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type IScaleObject<T extends IScaleTypeInner> = {
   '#type': 'Scale';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type IScaleCollection<T extends Record<string, any>> = {
   '#type': 'ScaleCollection';
 } & {
