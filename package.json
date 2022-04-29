@@ -1,6 +1,6 @@
 {
   "name": "@8pattern/gq",
-  "version": "0.0.4-beta-fix",
+  "version": "0.0.4-beta-fix2",
   "description": "A GraphQL client for TypeScript",
   "scripts": {
     "dev": "rollup -c -w --environment NODE_ENV:development",
@@ -30,7 +30,7 @@
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.30.0",
     "ts-jest": "^27.0.3",
-    "typescript": "^4.3.2"
+    "typescript": "^4.6.0"
   },
   "author": "8pattern",
   "license": "MIT",

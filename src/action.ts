@@ -201,8 +201,8 @@ function extractData(data: any, fields: string[], returnObj: boolean): any {
 
 function mergeResult(results: any[]): any {
   return results.reduce((pre, cur) => {
-    if (cur === undefined) return pre;
-    if (pre === undefined) return cur;
+    if ([undefined, null].includes(cur)) return pre ?? null;
+    if ([undefined, null].includes(pre)) return cur ?? null;
     if (pre instanceof Object && cur instanceof Object) {
       Object.entries(cur).forEach(([key, value]) => {
         if (key in pre) {
